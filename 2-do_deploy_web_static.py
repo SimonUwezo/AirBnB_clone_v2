@@ -6,25 +6,55 @@ archive to the web servers
 
 from fabric.api import put, run, env
 from os.path import exists
+import sys
+
 env.hosts = ['54.157.171.216', '35.174.213.220']
 
 
 def do_deploy(archive_path):
-    """distributes an archive to the web servers"""
-    if exists(archive_path) is False:
+    """Distributes an archive to the web servers."""
+    if not exists(archive_path):
+        print("Error: Archive file does not exist.")
         return False
+
     try:
-        file_n = archive_path.split("/")[-1]
-        no_ext = file_n.split(".")[0]
-        path = "/data/web_static/releases/"
+        file_name = archive_path.split("/")[-1]
+        folder_name = file_name.split(".")[0]
+        remote_path = "/data/web_static/releases/"
+
+        # Upload archive
         put(archive_path, '/tmp/')
-        run('mkdir -p {}{}/'.format(path, no_ext))
-        run('tar -xzf /tmp/{} -C {}{}/'.format(file_n, path, no_ext))
-        run('rm /tmp/{}'.format(file_n))
-        run('mv {0}{1}/web_static/* {0}{1}/'.format(path, no_ext))
-        run('rm -rf {}{}/web_static'.format(path, no_ext))
+
+        # Create directory
+        run('mkdir -p {}{}/'.format(remote_path, folder_name))
+
+        # Extract archive
+        run('tar -xzf /tmp/{} -C {}{}/'.format(file_name, remote_path, folder_name))
+
+        # Delete archive
+        run('rm /tmp/{}'.format(file_name))
+
+        # Move files
+        run('mv {0}{1}/web_static/* {0}{1}/'.format(remote_path, folder_name))
+
+        # Remove extracted folder
+        run('rm -rf {}{}/web_static'.format(remote_path, folder_name))
+
+        # Update symbolic link
         run('rm -rf /data/web_static/current')
-        run('ln -s {}{}/ /data/web_static/current'.format(path, no_ext))
+        run('ln -s {}{}/ /data/web_static/current'.format(remote_path, folder_name))
+
+        print("New version deployed!")
         return True
-    except:
+
+    except Exception as e:
+        print("Error: {}".format(e))
         return False
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Usage: fab -f <fabfile> do_deploy:archive_path=<archive_path>")
+        sys.exit(1)
+
+    archive_path = sys.argv[1].split('=')[-1]
+    do_deploy(archive_path)
