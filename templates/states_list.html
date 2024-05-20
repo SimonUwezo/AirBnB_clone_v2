@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>States</title>
+</head>
+<body>
+  <h1>States</h1>
+  <ul>
+    {% for state in states %}
+      <li>{{ state[0] }}</li>
+    {% endfor %}
+  </ul>
+  <form action="{{ url_for('add_state') }}" method="post">
+    <input type="text" name="state" placeholder="New State">
+    <button type="submit">Add State</button>
+  </form>
+</body>
+</html>
